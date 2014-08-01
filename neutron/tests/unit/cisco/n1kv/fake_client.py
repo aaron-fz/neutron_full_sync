@@ -14,6 +14,7 @@
 #
 # @author: Abhishek Raut, Cisco Systems Inc.
 # @author: Sourabh Patwardhan, Cisco Systems Inc.
+# @author: Aaron Zhang, Cisco Systems Inc.
 
 from neutron.openstack.common import log as logging
 from neutron.plugins.cisco.common import cisco_exceptions as c_exc
@@ -30,7 +31,8 @@ _resource_metadata = {'port': ['id', 'macAddress', 'ipAddress', 'subnetId'],
                       'subnet': ['addressRangeStart', 'addressRangeEnd',
                                  'ipAddressSubnet', 'description', 'gateway',
                                  'dhcp', 'dnsServersList', 'networkAddress',
-                                 'netSegmentName', 'id', 'tenantId']}
+                                 'netSegmentName', 'id', 'tenantId'],
+                      'vmnetworkpool': ['id', 'name', 'segment_type', 'sub_type']}
 
 
 class TestClient(n1kv_client.Client):
@@ -55,6 +57,8 @@ class TestClient(n1kv_client.Client):
             if 'virtual-port-profile' in action:
                 return _policy_profile_generator(
                     self._get_total_profiles())
+            if 'network-segment-pool' in action:
+                return _network_profile_generator(2)
             else:
                 raise c_exc.VSMError(reason='VSM:Internal Server Error')
 
@@ -94,6 +98,18 @@ def _validate_resource(action, body=None):
         return
 
 
+def _network_profile_generator(total_count):
+    '''
+    Generate network profile response and return a dictionary.
+    '''
+    network_profiles = {}
+    for i in range(1, total_count + 1):
+        name = 'np-%s' % i
+        pid = '%s' % i
+        network_profiles[name] = {'properties': {'name': name, 'id': pid}}
+    return network_profiles
+
+
 def _policy_profile_generator(total_profiles):
     """
     Generate policy profile response and return a dictionary.
@@ -101,7 +117,14 @@ def _policy_profile_generator(total_profiles):
     :param total_profiles: integer representing total number of profiles to
                            return
     """
-    profiles = {}
+    # default policy profiles
+    profiles = {"icehouse-pp": {"properties": {"name": "icehouse-pp",
+                                               "id": "some-uuid-1"}},
+                "havana_pp": {"properties": {"name": "havana_pp",
+                                             "id": "some-uuid-2"}},
+                "dhcp_pp": {"properties": {"name": "dhcp_pp",
+                                           "id": "some-uuid-3"}},
+    }
     for num in range(1, total_profiles + 1):
         name = "pp-%s" % num
         profile_id = "00000000-0000-0000-0000-00000000000%s" % num
