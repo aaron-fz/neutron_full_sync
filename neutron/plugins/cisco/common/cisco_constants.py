@@ -81,6 +81,9 @@ NETWORK_SUBTYPE_TRUNK_VXLAN = NETWORK_TYPE_OVERLAY
 # Prefix for VM Network name
 VM_NETWORK_NAME_PREFIX = 'vmn_'
 
+# Number of threads for HTTP connections to the VSM
+HTTP_POOL_SIZE = 4
+DEFAULT_HTTP_TIMEOUT = 30
 SET = 'set'
 INSTANCE = 'instance'
 PROPERTIES = 'properties'
