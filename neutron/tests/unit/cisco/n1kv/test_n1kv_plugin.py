@@ -72,10 +72,9 @@ def _fake_setup_vsm(self):
     self.full_sync = False
     self.n1kvclient = n1kv_client.Client()
     self.sync_resource = {"network_profiles": False,
-                              "networks": False,
-                              "subnets": False,
-                              "ports": False,}
-    
+                          "networks": False,
+                          "subnets": False,
+                          "ports": False}
     self._populate_policy_profiles()
 
 
@@ -218,7 +217,7 @@ class N1kvPluginTestCase(test_plugin.NeutronDbPluginV2TestCase):
 
         # Start dummy vsm with default fake_client.TestClient
         self._get_vsm_patch().start()
-        print 'Aaron: faking vsm'
+
         n1kv_neutron_plugin.N1kvNeutronPluginV2._setup_vsm = _fake_setup_vsm
 
         neutron_extensions.append_api_extensions_path(extensions.__path__)
@@ -694,8 +693,9 @@ class TestN1kvWithInvalidRequest(N1kvPluginTestCase):
 
     def test_create_next_port_invalid_parameters_fail(self):
         """Test parameters for subsequent port create sent to the VSM."""
-        request_patch = mock.patch(n1kv_client.__name__ + '.Client._do_request',
-                                   new=lambda *params, **kwargs: True)
+        request_patch = mock.patch((n1kv_client.__name__ +
+                                    '.Client._do_request'),
+                                   new=lambda *args, **kwargs: True)
         request_patch.start()
         with self.port() as port:
             request_patch.stop()
@@ -708,11 +708,28 @@ class TestN1kvWithInvalidRequest(N1kvPluginTestCase):
 
 
 class TestN1kvFullSync(N1kvPluginTestCase):
+    def _prepare_net_data(self, net_profile_id):
+        return {'network': {'name': 'net1',
+                            n1kv.PROFILE_ID: net_profile_id,
+                            'tenant_id': self.tenant_id}}
+
     def test_get_vsm_resource(self):
-        instance = n1kv_neutron_plugin.N1kvNeutronPluginV2()
-        network_profiles = instance._get_vsm_resource('network_profiles')
-        print 'Aaron: %s' % network_profiles
-        self.assertEqual(len(network_profiles), 2)    
+        for resource in ('network_profiles', 'networks',
+                         'subnets', 'vmnetworks'):
+            plugin = manager.NeutronManager.get_plugin()
+            ret = plugin._get_vsm_resource(resource)
+            self.assertEqual(len(ret), fake_client.total_count)
+
+    def test_sync_networks_with_vsm(self):
+        plugin = manager.NeutronManager.get_plugin()
+        profile_obj = self._make_test_profile(name='test_profile')
+        data = self._prepare_net_data(profile_obj.id)
+        network_req = self.new_create_request('networks', data)
+        network = self.deserialize(self.fmt,
+                                   network_req.get_response(self.api))
+        self.assertEqual(network['network'][n1kv.PROFILE_ID],
+                         profile_obj.id)
+        plugin._sync_networks_with_vsm(context.Context('', self.tenant_id))
 
 
 class TestN1kvPolicyProfiles(N1kvPluginTestCase):

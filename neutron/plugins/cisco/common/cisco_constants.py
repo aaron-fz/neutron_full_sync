@@ -83,7 +83,7 @@ VM_NETWORK_NAME_PREFIX = 'vmn_'
 
 # Number of threads for HTTP connections to the VSM
 HTTP_POOL_SIZE = 4
-DEFAULT_HTTP_TIMEOUT = 30
+DEFAULT_HTTP_TIMEOUT = 15
 SET = 'set'
 INSTANCE = 'instance'
 PROPERTIES = 'properties'
