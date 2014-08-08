@@ -108,6 +108,7 @@ class N1kvNeutronPluginV2(db_base_plugin_v2.NeutronDbPluginV2,
         4. Establish communication with Cisco Nexus1000V
         """
         super(N1kvNeutronPluginV2, self).__init__()
+        self.pool = eventlet.GreenPool(c_const.HTTP_POOL_SIZE)
         self.base_binding_dict = {
             portbindings.VIF_TYPE: portbindings.VIF_TYPE_OVS,
             portbindings.VIF_DETAILS: {
@@ -153,7 +154,7 @@ class N1kvNeutronPluginV2(db_base_plugin_v2.NeutronDbPluginV2,
         eventlet.spawn(self._poll_policy_profiles)
         # Maintain a flag that tracks whether a full sync is required
         # Set the flag to True to sync with VSM on neutron restarts
-        self.full_sync = True
+        self.full_sync = c_conf.CISCO_N1K.enable_sync_on_start
         # Maintain a dict to track whether a resource needs to be synced
         self.sync_resource = {"network_profiles": False,
                               "networks": False,
@@ -1422,7 +1423,6 @@ class N1kvNeutronPluginV2(db_base_plugin_v2.NeutronDbPluginV2,
         for net in nets:
             self._extend_network_dict_provider(context, net)
             self._extend_network_dict_profile(context, net)
-
         return [self._fields(net, fields) for net in nets]
 
     def create_port(self, context, port):
